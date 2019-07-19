@@ -1,42 +1,29 @@
 pipeline {
-    agent {
-        label 'demo'
+    
+    tools {
+        nodejs 'NodeLab'
     }
-
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                git 'https://github.com/YampolskyiVV/mdt'
             }
         }
-        stage('stage 1') {
+        stage('Sonarqube') {
             steps {
-                echo 'Stage1'
-            }
-        }
-        stage('Parallel') {
-            parallel {
-                stage('Stage2-parallel') {
-                    when { branch 'master' }
-                    steps {
-                        echo 'Stage2'
-                    }
-                }
-                stage('Stage3 - parallel') {
-                    when { not { branch 'master' } }
-                    steps {
-                        echo 'Stage3'
+                // specify server and credentials
+                withSonarQubeEnv(installationName: '', credentialsId: 'student19-sonar-token') {
+                    script {
+                        // install scanner and get installation path
+                        def sonarHome = tool 'sonar-scanner-lab'
+                        sh """${sonarHome}/bin/sonar-scanner -Dsonar.projectKey=student19-project -Dsonar.sources=www"""
                     }
                 }
             }
         }
-        stage('Optional') {
-            when {
-                expression {params.DOIT == true}
-            }
+        stage('Quality gate') {
             steps {
-                echo 'Do It'
+                waitForQualityGate abortPipeline: true
             }
-        }
-    }
+    
 }
